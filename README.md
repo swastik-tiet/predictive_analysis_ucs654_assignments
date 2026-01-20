@@ -1,66 +1,195 @@
-Name-Swastik
+Name-Swastik 
 Roll No-102316020
-================================================================================
-CREDIT CARD FRAUD DETECTION - SAMPLING ANALYSIS REPORT
-Thapar University
-================================================================================
+# Credit Card Fraud Detection: Sampling Techniques Analysis - Professional README
 
-DATASET INFORMATION:
---------------------------------------------------------------------------------
-Dataset: Credit Card Fraud Detection
-Original Shape: (772, 31)
-Balanced Shape: (1526, 30)
-Sample Size (per technique): 384
+## Methodology Explanation
 
-SAMPLING TECHNIQUES USED:
---------------------------------------------------------------------------------
-1. Simple Random Sampling
-2. Systematic Sampling
-3. Stratified Sampling
-4. Cluster Sampling (K-Means)
-5. Bootstrap Sampling
+This analysis aims to evaluate the performance of various machine learning models across different sampling techniques for credit card fraud detection, specifically addressing class imbalance.
 
-MACHINE LEARNING MODELS USED:
---------------------------------------------------------------------------------
-1. Logistic Regression
-2. Decision Tree
-3. Random Forest
-4. Support Vector Machine (SVM)
-5. XGBoost
+#### 1. Data Loading and Initial Exploration
 
-RESULTS TABLE (Accuracy %):
---------------------------------------------------------------------------------
+**Dataset Source:** The credit card transaction dataset was loaded directly from a GitHub URL: `'https://raw.githubusercontent.com/AnjulaMehto/Sampling_Assignment/main/Creditcard_data.csv'` using `pd.read_csv()`. This ensures reproducibility and direct access to the data.
+
+**Initial Shape:** The dataset `df` was initially loaded with a shape of `(772, 31)`, indicating 772 rows (transactions) and 31 columns (features including `Time`, `Amount`, `Class`, and 28 anonymized features `V1` through `V28`).
+
+**Data Exploration:** Initial exploration revealed no missing values. The data types were appropriate (integer for `Time`, `Class`, and float for `Amount` and `V` features). A statistical summary provided insights into the distribution of numerical features. A critical finding during exploration was the severe class imbalance.
+
+#### 2. Class Imbalance Handling with Random Over Sampling
+
+**Issue:** The original dataset exhibited extreme class imbalance, as shown by the 'Class Distribution (Before Balancing)':
+- Class 0 (Genuine): 763 transactions (98.83%)
+- Class 1 (Fraud): 9 transactions (1.17%)
+
+This severe imbalance means models trained directly on this data would likely be biased towards the majority class (non-fraudulent transactions) and perform poorly in detecting the minority class (fraudulent transactions).
+
+**Solution:** To address this, the `RandomOverSampler` technique from the `imblearn` library was used. `X` (features) and `y` (target 'Class') were separated from the original `df`. `ros.fit_resample(X, y)` was then applied to create a balanced dataset (`X_balanced`, `y_balanced`).
+
+**Result:** After Random Over Sampling, the 'Class Distribution (After Balancing)' was perfectly balanced:
+- Class 0 (Genuine): 763 transactions (50.00%)
+- Class 1 (Fraud): 763 transactions (50.00%)
+
+The balanced dataset `(X_balanced, y_balanced)` had a shape of `(1526, 30)`, effectively duplicating minority class samples until the counts matched the majority class.
+
+#### 3. Sample Size Calculation
+
+To ensure the samples drawn were statistically representative, a common formula for calculating sample size for proportions was used:
+
+**Formula:** `n = (Z^2 * p * q) / E^2`
+
+**Variables and Values:**
+- `Z` (Z-score for confidence level): Set to `1.96` for a 95% confidence level.
+- `p` (Estimated proportion of the population): Set to `0.5` (50%) to maximize variability and thus provide the largest possible sample size, ensuring sufficient data for analysis regardless of the true proportion.
+- `q` (1 - p): Also `0.5`.
+- `E` (Margin of error): Set to `0.05` (5%).
+
+**Calculated Sample Size:** Based on these parameters, the calculated sample size `n` was `384`.
+
+#### 4. Detailed Description of Sampling Techniques
+
+Five different sampling techniques were applied to the **balanced dataset (`X_balanced`, `y_balanced`)** to create representative samples, each with `n_samples = 384` (except Cluster Sampling, which resulted in a slightly different size due to its nature):
+
+##### a. Simple Random Sampling (`X_sample1`, `y_sample1`)
+- **Core Concept:** Each observation in the population has an equal probability of being selected for the sample. This is the most basic form of random sampling and is often used as a baseline.
+- **Implementation:** Implemented using `sklearn.utils.resample` with `n_samples=384` and `stratify=y_balanced` to ensure class proportions are maintained in the sample. `random_state=42` was used for reproducibility.
+- **Sample Characteristics:** `Shape: (384, 30)`, `Class distribution: {0: 192, 1: 192}`. This shows an equal number of genuine and fraud cases, reflecting the balanced population.
+
+##### b. Systematic Sampling (`X_sample2`, `y_sample2`)
+- **Core Concept:** A starting point is randomly selected, and then every k-th element from the population is selected. This ensures a systematic spread across the population.
+- **Implementation:** The `step` was calculated as `len(X_balanced) // sample_size`, which was `1526 // 384 = 3`. Indices were then generated by selecting every 3rd observation from the `X_balanced` and `y_balanced` dataframes using `iloc`.
+- **Sample Characteristics:** `Shape: (384, 30)`, `Class distribution: {0: 255, 1: 129}`. Note that systematic sampling might not perfectly preserve class balance, as seen here.
+
+##### c. Stratified Sampling (`X_sample3`, `y_sample3`)
+- **Core Concept:** The population is divided into homogeneous subgroups (strata) based on a shared characteristic (e.g., 'Class'), and then a simple random sample is drawn from each stratum in proportion to its size in the population. This guarantees representation from each subgroup.
+- **Implementation:** Implemented using `sklearn.model_selection.train_test_split` with `train_size=sample_size` and `stratify=y_balanced`. This function inherently splits the data while maintaining the proportions of classes in the target variable (`y_balanced`).
+- **Sample Characteristics:** `Shape: (384, 30)`, `Class distribution: {0: 192, 1: 192}`. This method successfully maintained the 50/50 class balance of the `X_balanced` population.
+
+##### d. Cluster Sampling (`X_sample4`, `y_sample4`)
+- **Core Concept:** The population is divided into clusters, and then a random sample of clusters is chosen. All units within the selected clusters are then included in the sample. This technique is useful when it's impractical to sample individual elements across the entire population.
+- **Implementation:** First, `KMeans` with `n_clusters=10` was applied to `X_balanced` to create 10 clusters. Then, `samples_per_cluster` was calculated (`sample_size // n_clusters = 384 // 10 = 38`). For each cluster, a random selection of up to `samples_per_cluster` indices was chosen, ensuring not to exceed the cluster's size. The selected indices were then used to form `X_sample4` and `y_sample4`.
+- **Sample Characteristics:** `Shape: (297, 30)`, `Class distribution: {0: 187, 1: 110}`. The final sample size was `297` because some clusters might have had fewer than 38 samples, and this method doesn't guarantee exact class balance or the target sample size if clusters are small or disproportionate.
+
+##### e. Bootstrap Sampling (`X_sample5`, `y_sample5`)
+- **Core Concept:** This is a resampling method where samples are drawn with replacement from the original population. It's often used to estimate the sampling distribution of a statistic or for creating multiple training sets for ensemble methods.
+- **Implementation:** `np.random.choice` was used to select `size=sample_size` (`384`) indices from the `X_balanced` dataset with `replace=True`. These indices were then used to create `X_sample5` and `y_sample5`.
+- **Sample Characteristics:** `Shape: (384, 30)`, `Class distribution: {0: 201, 1: 183}`. Due to sampling with replacement, the class distribution in a bootstrap sample can vary slightly from the original population.
+
+
+## Interpretation of the Results Table (Accuracy in %)
+
+The `results_df` DataFrame provides a clear overview of how each of the five machine learning models performed (in terms of accuracy percentage) when trained on data generated by five different sampling techniques. This table is crucial for understanding the impact of sampling on model effectiveness in fraud detection.
+
+```
                            Sampling1   Sampling2   Sampling3   Sampling4   Sampling5
-M1 - Logistic Regression   97.402597   84.415584   94.805195   88.333333   93.506494
-M2 - Decision Tree         98.701299   93.506494  100.000000   96.666667   96.103896
+M1 - Logistic Regression   97.402597   84.415584   94.805195   90.000000   94.805195
+M2 - Decision Tree         98.701299   93.506494  100.000000   93.333333  100.000000
 M3 - Random Forest        100.000000  100.000000  100.000000  100.000000  100.000000
-M4 - SVM                   66.233766   70.129870   75.324675   71.666667   76.623377
-M5 - XGBoost               98.701299   98.701299   98.701299  100.000000   96.103896
+M4 - SVM                   66.233766   70.129870   75.324675   68.333333   59.740260
+M5 - XGBoost               98.701299   98.701299   98.701299   98.333333  100.000000
+```
 
-BEST COMBINATIONS:
---------------------------------------------------------------------------------
-Overall Best: M3 - Random Forest with Sampling1
-Highest Accuracy: 100.00%
+### Key Observations:
 
-AVERAGE PERFORMANCE BY MODEL:
---------------------------------------------------------------------------------
-M3 - Random Forest          100.00
-M5 - XGBoost                 98.44
-M2 - Decision Tree           97.00
-M1 - Logistic Regression     91.69
-M4 - SVM                     72.00
+1.  **Consistently High-Performing Models:**
+    *   **M3 - Random Forest** stands out as the most robust model, achieving a perfect **100.00% accuracy** across all five sampling techniques (Sampling1, Sampling2, Sampling3, Sampling4, Sampling5). This indicates its strong generalization capability regardless of how the sample was generated from the balanced dataset.
+    *   **M5 - XGBoost** also showed very strong and consistent performance, with accuracies generally above 98%. Its highest was 100% on Sampling5.
+    *   **M2 - Decision Tree** performed well, achieving 100% accuracy on Stratified Sampling (Sampling3) and Bootstrap Sampling (Sampling5), and otherwise staying above 93%. However, it was slightly less consistent than Random Forest and XGBoost.
 
-AVERAGE PERFORMANCE BY SAMPLING:
---------------------------------------------------------------------------------
-Sampling3    93.77
-Sampling5    92.47
-Sampling1    92.21
-Sampling4    91.33
-Sampling2    89.35
+2.  **Impact of Sampling Techniques on Model Performance:**
+    *   **Sampling3 (Stratified Sampling)** and **Sampling1 (Simple Random Sampling)** generally resulted in higher accuracies for most models, with Stratified Sampling showing particularly good results by leading to 100% accuracy for Decision Tree and Random Forest.
+    *   **Sampling2 (Systematic Sampling)** seemed to be the least effective on average, especially for Logistic Regression, which saw a significant drop to 84.42% accuracy compared to its performance on other samples.
+    *   **Sampling4 (Cluster Sampling)** also showed slightly varied results, leading to a lower accuracy for SVM and a perfect score for Random Forest and XGBoost.
+    *   **Sampling5 (Bootstrap Sampling)** allowed Decision Tree and XGBoost to achieve 100% accuracy.
 
-CONCLUSION:
---------------------------------------------------------------------------------
-This analysis demonstrates that sampling technique selection significantly
-impacts model performance. The best model-sampling combination achieved
-100.00% accuracy. Tree-based ensemble methods showed robust
-performance across different sampling techniques.
+3.  **Overall Best Combination:**
+    *   The overall best combination identified was **M3 - Random Forest** with **Sampling1 (Simple Random Sampling)**, achieving an accuracy of **100.00%**. It's noteworthy that Random Forest achieved this perfect score with all sampling techniques, highlighting its robustness.
+
+4.  **Low or Inconsistent Performance:**
+    *   **M4 - SVM** exhibited the lowest and most inconsistent performance across all sampling techniques. Its accuracies ranged from a low of 59.74% (Sampling5) to a high of 75.32% (Sampling3). This suggests that SVM might not be well-suited for this dataset or requires more fine-tuning of its hyperparameters, and it is significantly more sensitive to the sampling method than tree-based models.
+    *   **M1 - Logistic Regression** showed decent performance but was sensitive to the sampling method. While it achieved 97.40% with Simple Random Sampling, its accuracy dropped notably with Systematic Sampling (84.42%).
+
+### Relationship Between Model Choice and Sampling Technique:
+
+*   **Tree-based ensemble models (Random Forest and XGBoost) demonstrated remarkable stability and high performance** across all sampling techniques. This suggests that these models are less susceptible to the variations introduced by different sampling methods, making them highly reliable for this type of fraud detection task after balancing the classes.
+*   Conversely, **linear models (Logistic Regression) and kernel-based models (SVM) showed greater sensitivity** to the choice of sampling technique. Their performance fluctuated considerably, indicating that the structure or distribution of the sampled data had a more pronounced effect on their ability to generalize.
+*   For datasets with inherent class imbalance (even after initial balancing), **stratified sampling (Sampling3)** proves effective in maintaining class proportions within samples, which often contributes to better model training, especially for models that are sensitive to distribution changes.
+
+
+## Explanation of the Average Performance Graphs
+
+### Average Performance of Each Model Across All Sampling Techniques
+
+This bar chart illustrates the average accuracy of each machine learning model when evaluated across all five sampling techniques (Simple Random, Systematic, Stratified, Cluster, and Bootstrap Sampling). The models are ordered from highest to lowest average accuracy.
+
+*   **Highest Performers:** `M3 - Random Forest` and `M5 - XGBoost` stand out as the top two models, achieving average accuracies of **100.00%** and **98.89%**, respectively. This indicates their robust and consistent performance regardless of the sampling method applied.
+*   **Mid-Range Performers:** `M2 - Decision Tree` also shows strong performance with an average accuracy of **97.11%**, suggesting its reliability across various sampled datasets. `M1 - Logistic Regression` follows with **92.29%**, demonstrating a generally good, but slightly less consistent, performance.
+*   **Lowest Performer:** `M4 - SVM` (Support Vector Machine) has the lowest average accuracy at **67.95%**. This significant drop compared to other models suggests that SVM is either more sensitive to the sampled data distributions or less effective for this specific fraud detection task under the given conditions.
+
+**Insight:** Ensemble tree-based models (Random Forest and XGBoost) are exceptionally well-suited for this fraud detection problem, maintaining very high performance across diverse sampling strategies. SVM, on the other hand, struggles comparatively, indicating it might not be the best choice without further hyperparameter tuning or different feature engineering.
+
+### Average Performance of Each Sampling Technique Across All Models
+
+This bar chart presents the average accuracy of each sampling technique when evaluated across all five machine learning models. The techniques are ordered from highest to lowest average accuracy.
+
+*   **Highest Performers:** `Sampling3 (Stratified Sampling)` shows the highest average accuracy at **93.77%**. This indicates that maintaining the original class proportions during sampling leads to the most consistent and accurate model performance overall. `Sampling1 (Simple Random Sampling)` and `Sampling5 (Bootstrap Sampling)` also perform well, with average accuracies of **92.21%** and **90.91%**, respectively.
+*   **Mid-Range Performers:** `Sampling4 (Cluster Sampling)` achieves an average accuracy of **90.00%**. While still strong, its performance is slightly lower, possibly due to the nature of cluster formation and selection.
+*   **Lowest Performer:** `Sampling2 (Systematic Sampling)` has the lowest average accuracy at **89.35%**. This suggests that selecting every 'n-th' observation might introduce some biases or not adequately represent the dataset for optimal model training across all models.
+
+**Insight:** Stratified sampling proves to be the most effective sampling technique for this dataset, likely due to its ability to preserve the class distribution, which is crucial for imbalanced datasets like fraud detection. Simple random sampling and bootstrap sampling also provide reliable average performance. Systematic sampling, while convenient, seems to be the least robust in this context.
+
+### Relationships and Discrepancies Between Model and Sampling Technique Performance
+
+Analyzing both bar charts reveals interesting interactions and trends:
+
+*   **Robustness of Tree-based Models:** `Random Forest` and `XGBoost` consistently demonstrated near-perfect accuracy across almost all sampling techniques. This indicates that these ensemble models are highly robust and less sensitive to the variations introduced by different sampling methods. Even with the less effective sampling methods like Systematic Sampling, these models maintained high performance.
+
+*   **SVM's Sensitivity:** In stark contrast, `SVM` showed the most variability and lowest average accuracy. Its performance was significantly affected by the choice of sampling technique. For instance, while it achieved a relatively higher accuracy with Stratified Sampling (75.32%) compared to Bootstrap Sampling (59.74%), its overall average remained low, suggesting that SVM might struggle with the inherent characteristics of the dataset or require more fine-tuning specific to each sampled subset.
+
+*   **Impact of Stratified Sampling:** `Stratified Sampling` emerged as the most effective technique overall, providing the highest average accuracy across all models. This is particularly important for imbalanced datasets like fraud detection, where preserving the class distribution ensures that models are trained on a representative sample of both genuine and fraudulent transactions. This technique helped even `SVM` achieve its highest accuracy among all sampling methods.
+
+*   **Systematic Sampling's Limitations:** `Systematic Sampling` generally yielded lower average performance for models, indicating that its deterministic selection of every N-th element might not always create a truly representative sample, potentially missing crucial patterns for some models. While Random Forest and XGBoost were resilient, other models like Logistic Regression and Decision Tree saw a dip in performance with this method.
+
+**Key Observation:** The choice of sampling technique matters, especially for models that are more sensitive to data distribution. However, highly robust models like Random Forest and XGBoost can mitigate some of the performance drops that less suitable sampling techniques might cause for other models.
+
+### Summary of Key Insights from Performance Graphs
+
+Based on the analysis of the average performance graphs for both models and sampling techniques, the following key insights can be derived:
+
+1.  **Overall Best Models:** `Random Forest` and `XGBoost` emerged as the consistently best-performing machine learning models. Both achieved remarkably high average accuracies (100.00% and 98.89% respectively) across all sampling techniques. This indicates their superior robustness and effectiveness for this credit card fraud detection task, largely attributable to their ensemble nature which helps in handling complex, imbalanced datasets.
+
+2.  **Overall Best Sampling Technique:** `Stratified Sampling` proved to be the most effective sampling technique, yielding the highest average accuracy (93.77%) across all models. Its strength lies in preserving the original class distribution, which is crucial for maintaining data representativeness in highly imbalanced datasets like the one at hand. Simple Random Sampling also performed well, suggesting that a purely random approach can still be quite effective when class balance is achieved prior to sampling.
+
+3.  **Model Robustness vs. Sampling Sensitivity:** Tree-based ensemble models (`Random Forest`, `XGBoost`) demonstrated high resilience to different sampling methods, consistently delivering top-tier performance. In contrast, `SVM` exhibited significant sensitivity to the sampling technique, performing poorly on average, highlighting that some models are more dependent on the quality and representativeness of the sampled data.
+
+4.  **Least Effective Sampling:** `Systematic Sampling` generally resulted in the lowest average accuracy (89.35%) across models. This suggests that its deterministic selection approach might introduce biases or fail to capture the underlying data patterns as effectively as other methods for certain models.
+
+**Conclusion:** For credit card fraud detection with this dataset, the combination of **tree-based ensemble models (specifically Random Forest or XGBoost)** with **Stratified Sampling** appears to be the most effective strategy. While robust models can mitigate some sampling technique limitations, optimizing the sampling approach, especially by maintaining class proportionality, significantly enhances overall prediction accuracy and reliability.
+
+
+## Final Summary and Insights/Next Steps
+
+### Data Analysis Key Findings
+
+*   **Initial Data Imbalance:** The original credit card transaction dataset (772 transactions, 31 features) exhibited severe class imbalance, with only 1.17% (9 transactions) being fraudulent (Class 1) and 98.83% (763 transactions) being genuine (Class 0).
+*   **Class Balancing:** `RandomOverSampler` was applied to address the imbalance, resulting in a perfectly balanced dataset of 1526 transactions (763 genuine, 763 fraudulent).
+*   **Calculated Sample Size:** A sample size of 384 was calculated using the formula \( n = rac{Z^2 \cdot p \cdot q}{E^2} \) with a 95% confidence level and 5% margin of error.
+*   **Sampling Techniques Overview:**
+    *   **Simple Random Sampling (Sampling1)** and **Stratified Sampling (Sampling3)** effectively maintained the 50/50 class balance, yielding 192 samples for each class out of 384.
+    *   **Systematic Sampling (Sampling2)** resulted in a less balanced sample (255 genuine, 129 fraudulent).
+    *   **Cluster Sampling (Sampling4)** produced a smaller sample size (297 transactions) with a class distribution of 187 genuine and 110 fraudulent.
+    *   **Bootstrap Sampling (Sampling5)** also showed a slight deviation from perfect balance (201 genuine, 183 fraudulent).
+*   **Model Performance Highlights:**
+    *   **Random Forest (M3)** was the most robust and highest-performing model, achieving a perfect 100.00% accuracy across all five sampling techniques. Its average accuracy was 100.00%.
+    *   **XGBoost (M5)** also performed exceptionally well, with accuracies generally above 98% and a highest of 100% on Sampling5, resulting in an average accuracy of 98.89%.
+    *   **Decision Tree (M2)** achieved 100% accuracy with Stratified Sampling and Bootstrap Sampling, with an average accuracy of 97.11%.
+    *   **Logistic Regression (M1)** showed decent performance but was sensitive to sampling, ranging from 84.42% (Systematic Sampling) to 97.40% (Simple Random Sampling), with an average accuracy of 92.29%.
+    *   **SVM (M4)** was the lowest and most inconsistent performer, with accuracies ranging from 59.74% to 75.32%, and an average accuracy of 67.95%.
+*   **Sampling Technique Performance Highlights:**
+    *   **Stratified Sampling (Sampling3)** yielded the highest average accuracy across all models (93.77%), proving most effective in preserving class distribution for optimal model training.
+    *   **Simple Random Sampling (Sampling1)** was also highly effective, with an average accuracy of 92.21%.
+    *   **Systematic Sampling (Sampling2)** generally resulted in the lowest average accuracy (89.35%).
+*   **Best Overall Combination:** M3 - Random Forest combined with any of the sampling techniques, particularly Sampling1 (Simple Random Sampling), achieved 100.00% accuracy.
+
+### Insights or Next Steps
+
+*   **Prioritize Tree-Based Ensemble Models:** For fraud detection on this dataset, tree-based ensemble models like Random Forest and XGBoost are highly recommended due to their superior robustness and consistent high performance across diverse sampling strategies.
+*   **Utilize Stratified Sampling:** When dealing with imbalanced datasets, Stratified Sampling should be a preferred approach as it consistently ensures representative samples by preserving class proportions, leading to more reliable model performance.
