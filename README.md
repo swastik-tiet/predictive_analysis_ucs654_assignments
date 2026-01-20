@@ -1,6 +1,6 @@
 Name-Swastik 
 Roll No-102316020
-# Credit Card Fraud Detection: Sampling Techniques Analysis - Professional README
+# Credit Card Fraud Detection: Sampling Techniques Analysis
 
 ## Methodology Explanation
 
