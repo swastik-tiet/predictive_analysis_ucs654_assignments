@@ -165,31 +165,3 @@ Based on the analysis of the average performance graphs for both models and samp
 **Conclusion:** For credit card fraud detection with this dataset, the combination of **tree-based ensemble models (specifically Random Forest or XGBoost)** with **Stratified Sampling** appears to be the most effective strategy. While robust models can mitigate some sampling technique limitations, optimizing the sampling approach, especially by maintaining class proportionality, significantly enhances overall prediction accuracy and reliability.
 
 
-## Final Summary and Insights/Next Steps
-
-### Data Analysis Key Findings
-
-*   **Initial Data Imbalance:** The original credit card transaction dataset (772 transactions, 31 features) exhibited severe class imbalance, with only 1.17% (9 transactions) being fraudulent (Class 1) and 98.83% (763 transactions) being genuine (Class 0).
-*   **Class Balancing:** `RandomOverSampler` was applied to address the imbalance, resulting in a perfectly balanced dataset of 1526 transactions (763 genuine, 763 fraudulent).
-*   **Calculated Sample Size:** A sample size of 384 was calculated using the formula \( n = rac{Z^2 \cdot p \cdot q}{E^2} \) with a 95% confidence level and 5% margin of error.
-*   **Sampling Techniques Overview:**
-    *   **Simple Random Sampling (Sampling1)** and **Stratified Sampling (Sampling3)** effectively maintained the 50/50 class balance, yielding 192 samples for each class out of 384.
-    *   **Systematic Sampling (Sampling2)** resulted in a less balanced sample (255 genuine, 129 fraudulent).
-    *   **Cluster Sampling (Sampling4)** produced a smaller sample size (297 transactions) with a class distribution of 187 genuine and 110 fraudulent.
-    *   **Bootstrap Sampling (Sampling5)** also showed a slight deviation from perfect balance (201 genuine, 183 fraudulent).
-*   **Model Performance Highlights:**
-    *   **Random Forest (M3)** was the most robust and highest-performing model, achieving a perfect 100.00% accuracy across all five sampling techniques. Its average accuracy was 100.00%.
-    *   **XGBoost (M5)** also performed exceptionally well, with accuracies generally above 98% and a highest of 100% on Sampling5, resulting in an average accuracy of 98.89%.
-    *   **Decision Tree (M2)** achieved 100% accuracy with Stratified Sampling and Bootstrap Sampling, with an average accuracy of 97.11%.
-    *   **Logistic Regression (M1)** showed decent performance but was sensitive to sampling, ranging from 84.42% (Systematic Sampling) to 97.40% (Simple Random Sampling), with an average accuracy of 92.29%.
-    *   **SVM (M4)** was the lowest and most inconsistent performer, with accuracies ranging from 59.74% to 75.32%, and an average accuracy of 67.95%.
-*   **Sampling Technique Performance Highlights:**
-    *   **Stratified Sampling (Sampling3)** yielded the highest average accuracy across all models (93.77%), proving most effective in preserving class distribution for optimal model training.
-    *   **Simple Random Sampling (Sampling1)** was also highly effective, with an average accuracy of 92.21%.
-    *   **Systematic Sampling (Sampling2)** generally resulted in the lowest average accuracy (89.35%).
-*   **Best Overall Combination:** M3 - Random Forest combined with any of the sampling techniques, particularly Sampling1 (Simple Random Sampling), achieved 100.00% accuracy.
-
-### Insights or Next Steps
-
-*   **Prioritize Tree-Based Ensemble Models:** For fraud detection on this dataset, tree-based ensemble models like Random Forest and XGBoost are highly recommended due to their superior robustness and consistent high performance across diverse sampling strategies.
-*   **Utilize Stratified Sampling:** When dealing with imbalanced datasets, Stratified Sampling should be a preferred approach as it consistently ensures representative samples by preserving class proportions, leading to more reliable model performance.
